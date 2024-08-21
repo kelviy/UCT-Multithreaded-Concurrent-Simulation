@@ -1,0 +1,4 @@
+bin/**
+.DS_STORE
+.idea/**
+PCP2.iml

@@ -7,11 +7,13 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 
 public class MedleySimulation {
-	static final CountDownLatch startRace = new CountDownLatch(1);
+	static final CountDownLatch startRaceLatch = new CountDownLatch(1);
 
 	static final int numTeams=10;
+	static final CyclicBarrier allSwimmersReadyBarrier = new CyclicBarrier(numTeams);
 	
    	static int frameX=300; //frame width
 	static int frameY=600;  //frame height
@@ -62,7 +64,7 @@ public class MedleySimulation {
 		// add the listener to the jbutton to handle the "pressed" event
 		startB.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)  {
-				startRace.countDown();
+				startRaceLatch.countDown();
 		    }
 		   });
 	
@@ -97,7 +99,7 @@ public class MedleySimulation {
 	    peopleLocations = new PeopleLocation[numTeams*SwimTeam.sizeOfTeam]; //four swimmers per team
 		teams = new SwimTeam[numTeams];
 		for (int i=0;i<numTeams;i++) {
-        	teams[i]=new SwimTeam(i, finishLine, peopleLocations);        	
+        	teams[i]=new SwimTeam(i, finishLine, peopleLocations, allSwimmersReadyBarrier);
 		}
 		setupGUI(frameX, frameY);  //Start Panel thread - for drawing animation
 		
@@ -111,7 +113,7 @@ public class MedleySimulation {
       	
       	//start teams, which start swimmers.
       	for (int i=0;i<numTeams;i++) {
-			  startRace.await();
+			  startRaceLatch.await();
 			  teams[i].start();
 		}
 	}

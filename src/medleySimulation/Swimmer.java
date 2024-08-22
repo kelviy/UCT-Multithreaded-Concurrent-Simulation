@@ -6,14 +6,22 @@ package medleySimulation;
 import java.awt.Color;
 
 import java.util.Random;
-
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class Swimmer extends Thread {
 	
 	public static StadiumGrid stadium; //shared 
 	private FinishCounter finish; //shared
-	
+	private CyclicBarrier teamArrivedBarrier; //shared
+	private final AtomicInteger lastEntered;
+	private final CyclicBarrier allSwimmersReadyBarrier;
+	private CountDownLatch currentLatch;
+	private CountDownLatch nextTeamLatch;
+
 		
 	GridBlock currentBlock;
 	private Random rand;
@@ -47,7 +55,7 @@ public class Swimmer extends Thread {
 	    private final SwimStroke swimStroke;
 	
 	//Constructor
-	Swimmer( int ID, int t, PeopleLocation loc, FinishCounter f, int speed, SwimStroke s) {
+	Swimmer(int ID, int t, PeopleLocation loc, FinishCounter f, int speed, SwimStroke s, CyclicBarrier teamArrivedBarrier, AtomicInteger lastEntered, CyclicBarrier allSwimmersReadyBarrier) {
 		this.swimStroke = s;
 		this.ID=ID;
 		movingSpeed=speed; //range of speeds for swimmers
@@ -56,16 +64,24 @@ public class Swimmer extends Thread {
 		start = stadium.returnStartingBlock(team);
 		finish=f;
 		rand=new Random();
+		this.teamArrivedBarrier = teamArrivedBarrier;
+		this.lastEntered = lastEntered;
+		this.allSwimmersReadyBarrier = allSwimmersReadyBarrier;
+	}
+
+	public void assignLatches(CountDownLatch currentLatch, CountDownLatch nextTeamLatch) {
+		this.currentLatch = currentLatch;
+		this.nextTeamLatch = nextTeamLatch;
 	}
 	
 	//getter
-	public   int getX() { return currentBlock.getX();}	
+	public  int getX() { return currentBlock.getX();}
 	
 	//getter
 	public   int getY() {	return currentBlock.getY();	}
 	
 	//getter
-	public   int getSpeed() { return movingSpeed; }
+	public  int getSpeed() { return movingSpeed; }
 
 	
 	public SwimStroke getSwimStroke() {
@@ -142,10 +158,25 @@ public class Swimmer extends Thread {
 			//Swimmer arrives
 			sleep(movingSpeed+(rand.nextInt(10))); //arriving takes a while
 			myLocation.setArrived();
-			enterStadium();	
-			
+
+			// barrier await for all other team members
+			teamArrivedBarrier.await();
+
+			// enter in order
+			synchronized (lastEntered) {
+				while (lastEntered.get() < getSwimStroke().getOrder()) {
+					lastEntered.wait();
+				}
+				lastEntered.set(getSwimStroke().getOrder() + 1);
+				enterStadium();
+				lastEntered.notifyAll();
+			}
+
 			goToStartingBlocks();
-								
+
+			allSwimmersReadyBarrier.await();
+
+			currentLatch.await();
 			dive(); 
 				
 			swimRace();
@@ -153,12 +184,15 @@ public class Swimmer extends Thread {
 				finish.finishRace(ID, team); // fnishline
 			}
 			else {
-				//System.out.println("Thread "+this.ID + " done " + currentBlock.getX()  + " " +currentBlock.getY() );			
+				//System.out.println("Thread "+this.ID + " done " + currentBlock.getX()  + " " +currentBlock.getY() );
+				nextTeamLatch.countDown();
 				exitPool();//if not last swimmer leave pool
 			}
 			
 		} catch (InterruptedException e1) {  //do nothing
-		} 
-	}
-	
+		} catch (BrokenBarrierException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

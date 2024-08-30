@@ -4,9 +4,6 @@
 
 package medleySimulation;
 
-
-import java.util.concurrent.atomic.AtomicInteger;
-
 public class GridBlock {
 	
 	private int isOccupied;
@@ -23,13 +20,13 @@ public class GridBlock {
 		this(startBlock);
 		coords = new int [] {x,y};
 	}
-	
+
+	// synchronized every method that accesses the state of the GridBlock
+	// prevents data races and bad inter leavings
 	public synchronized int getX() {return coords[0];}
 	
 	public synchronized int getY() {return coords[1];}
-	
-	
-	
+
 	//Get a block
 	public synchronized boolean get(int threadID) throws InterruptedException {
 		if (isOccupied==threadID) return true; //thread Already in this block
@@ -37,24 +34,20 @@ public class GridBlock {
 		isOccupied = threadID;  //set ID to thread that had block
 		return true;
 	}
-		
-	
+
 	//release a block
 	public synchronized void release() {
 		isOccupied = -1;
 	}
-	
 
 	//is a block already occupied?
 	public synchronized boolean occupied() {
 		if(isOccupied == -1) return false;
 		return true;
 	}
-	
-	
+
 	//is a start block
 	public synchronized boolean isStart() {
 		return isStart;	
 	}
-
 }

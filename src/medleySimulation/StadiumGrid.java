@@ -10,7 +10,7 @@ public class StadiumGrid {
 	private final int y; //maximum y value
 	public  static int start_y; // where the starting blocks are 
 	
-	private GridBlock entrance; //hard coded entrance
+	private final GridBlock entrance; //hard coded entrance
 	
 	private GridBlock startingBlocks[]; //hard coded starting blocks
 	private final static int minX =5;//minimum x dimension
@@ -60,7 +60,7 @@ public class StadiumGrid {
 		return true;
 	}
 	
-	//is this a val2id grid reference?
+	//is this a valid grid reference?
 	public  boolean inStadiumArea(int i, int j) {
 		return inGrid(i,j);
 	}
@@ -68,10 +68,12 @@ public class StadiumGrid {
 	
 	//a person enters the stadium
 	public GridBlock enterStadium(PeopleLocation myLocation) throws InterruptedException  {
+		// lock on entrance (synchronization mechanism)
 		synchronized (entrance) {
-			while ((!entrance.get(myLocation.getID()))) {
+			// checks if entrance is free, if not then wait, until woken up by thread moving away from occupied entrance
+			while ((!entrance.get(myLocation.getID())))
 				entrance.wait();
-			} //wait at entrace until entrance is free - spinning, not good
+			// proceeds to enter if entrance is free
 			myLocation.setLocation(entrance);
 			myLocation.setInStadium(true);
 		}
@@ -108,25 +110,24 @@ public class StadiumGrid {
 			newBlock = whichBlock(add_x+c_x,c_y); //try moving x only first
 		else 
 			newBlock= whichBlock(add_x+c_x,add_y+c_y);//try diagonal or y
-		
+
+		// Lock on newBlock (synchronization mechanism)
+		// newBlock is the next block to move towards
 		synchronized (newBlock) {
+			// checks if next block is free, else wait until notified by a thread that has been occupying the block moves away.
 			while ((!newBlock.get(myLocation.getID())))
 				newBlock.wait();
-			 //wait until block is free - but spinning is bad
+			// proceeds if free
 			myLocation.setLocation(newBlock);
 			currentBlock.release(); //must release current block
-			newBlock.notifyAll();
 		}
+		// Lock on previous block
+		// if in this part of code, this means that swimmer has moved on to the next block
 		synchronized (currentBlock) {
+			// notifies the threads waiting on previously occupied block, that the block is now free
 			currentBlock.notifyAll();
 		}
-		synchronized (entrance) {
-			if (currentBlock.equals(entrance))
-				entrance.notifyAll();
-		}
 		return newBlock;
-		
-		
 	} 
 	
 	//levitate to a specific block -
@@ -139,16 +140,20 @@ public GridBlock jumpTo(GridBlock currentBlock,int x, int y,PeopleLocation myLoc
 		}
 
 		GridBlock newBlock= whichBlock(x,y);//try diagonal or y
-		
+
+		// Lock on newBlock
+		// newBlock is the next block to move towards
 		synchronized (newBlock) {
+			// waits if block is occupied
 			while ((!newBlock.get(myLocation.getID())))
 				newBlock.wait();
-			 //wait until block is free - but spinning, not good
+			// proceeds if block is not occupied
 			myLocation.setLocation(newBlock);
 			currentBlock.release(); //must release current block
-			newBlock.notifyAll();
 		}
+		// lock on previous block (currentBlock)
 		synchronized (currentBlock) {
+			// notifies swimmers waiting on the block that the block is available
 			currentBlock.notifyAll();
 		}
 		return newBlock;

@@ -10,9 +10,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
 public class MedleySimulation {
+	// Latch connected to start button which releases swimmers into the stadium
 	static final CountDownLatch startRaceLatch = new CountDownLatch(1);
 
 	static final int numTeams=10;
+
+	// Barrier that makes swimmers wait until all members of the same swim stroke are ready before entering the stadium
+	// passed to each swim team
 	static final CyclicBarrier allSwimmersReadyBarrier = new CyclicBarrier(numTeams);
 	
    	static int frameX=300; //frame width
@@ -64,6 +68,7 @@ public class MedleySimulation {
 		// add the listener to the jbutton to handle the "pressed" event
 		startB.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)  {
+				// starts all swimmer team threads
 				startRaceLatch.countDown();
 		    }
 		   });
@@ -113,6 +118,7 @@ public class MedleySimulation {
       	
       	//start teams, which start swimmers.
       	for (int i=0;i<numTeams;i++) {
+			  // makes all swimmers wait until start button is pressed
 			  startRaceLatch.await();
 			  teams[i].start();
 		}

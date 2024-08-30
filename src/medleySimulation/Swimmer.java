@@ -13,15 +13,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class Swimmer extends Thread {
-	
-	public static StadiumGrid stadium; //shared 
-	private FinishCounter finish; //shared
-	private CyclicBarrier teamArrivedBarrier; //shared
-	private final AtomicInteger lastEntered;
+
+	// shared objects below
+
+	// Barrier to check if all team members have arrived - passed by SwimTeam
+	private final CyclicBarrier teamArrivedBarrier;
+
+	// Integer which determines the order in which the swimmers enter the stadium
+	// Atomic Integer to prevent data races
+	// One Integer for each team
+	private final AtomicInteger toEnterOrder;
+	// Barrier which checks if all swim members of same stroke are ready before diving - passed by MedleySimulation
 	private final CyclicBarrier allSwimmersReadyBarrier;
+	// Latch releases when swimmer's team member finishes to prompt the next team member to dive
 	private CountDownLatch currentLatch;
+	// Access to the next team member's latch for release when current swimmer finishes
 	private CountDownLatch nextTeamLatch;
 
+	public static StadiumGrid stadium; //shared 
+	private final FinishCounter finish; //shared
 		
 	GridBlock currentBlock;
 	private Random rand;
@@ -55,7 +65,7 @@ public class Swimmer extends Thread {
 	    private final SwimStroke swimStroke;
 	
 	//Constructor
-	Swimmer(int ID, int t, PeopleLocation loc, FinishCounter f, int speed, SwimStroke s, CyclicBarrier teamArrivedBarrier, AtomicInteger lastEntered, CyclicBarrier allSwimmersReadyBarrier) {
+	Swimmer(int ID, int t, PeopleLocation loc, FinishCounter f, int speed, SwimStroke s, CyclicBarrier teamArrivedBarrier, AtomicInteger toEnterOrder, CyclicBarrier allSwimmersReadyBarrier) {
 		this.swimStroke = s;
 		this.ID=ID;
 		movingSpeed=speed; //range of speeds for swimmers
@@ -65,10 +75,11 @@ public class Swimmer extends Thread {
 		finish=f;
 		rand=new Random();
 		this.teamArrivedBarrier = teamArrivedBarrier;
-		this.lastEntered = lastEntered;
+		this.toEnterOrder = toEnterOrder;
 		this.allSwimmersReadyBarrier = allSwimmersReadyBarrier;
 	}
 
+	// method that assigns the latches after swimmers in the team are created - called in swim team
 	public void assignLatches(CountDownLatch currentLatch, CountDownLatch nextTeamLatch) {
 		this.currentLatch = currentLatch;
 		this.nextTeamLatch = nextTeamLatch;
@@ -154,37 +165,48 @@ public class Swimmer extends Thread {
 	
 	public void run() {
 		try {
-			
 			//Swimmer arrives
 			sleep(movingSpeed+(rand.nextInt(10))); //arriving takes a while
 			myLocation.setArrived();
 
-			// barrier await for all other team members
+			// barrier to await for all other team members
 			teamArrivedBarrier.await();
 
-			// enter in order
-			synchronized (lastEntered) {
-				while (lastEntered.get() < getSwimStroke().getOrder()) {
-					lastEntered.wait();
+			// synchronization mechanism for swimmers to enter in order
+			// Lock on Atomic Integer since there's a compound action on the atomic integer
+			// Checks Swimmer Thread checks Atomic Integer to see if it's the requested to enter the stadium
+			// Else wait until woken up by a thread that has successfully entered the stadium
+			// Swimmer that enters would update the Integer to request next swimmer in order to enter
+			synchronized (toEnterOrder) {
+				// waits if not requested
+				while (toEnterOrder.get() < getSwimStroke().getOrder()) {
+					toEnterOrder.wait();
 				}
-				lastEntered.set(getSwimStroke().getOrder() + 1);
+				// proceeds if requested
 				enterStadium();
-				lastEntered.notifyAll();
+				toEnterOrder.set(getSwimStroke().getOrder() + 1);
+				toEnterOrder.notifyAll();
 			}
 
 			goToStartingBlocks();
 
+			// barrier to wait for all other swimmers of the same swim stroke to arrive at starting block
 			allSwimmersReadyBarrier.await();
 
+			// waits for the already swimming team member to finish before diving and swimming
+			// if it's the first team member then their latch has already been released at instantiation in SwimTeam's constructor
 			currentLatch.await();
 			dive(); 
 				
 			swimRace();
+
 			if(swimStroke.order==4) {
-				finish.finishRace(ID, team); // fnishline
+				finish.finishRace(ID, team); // finish line
 			}
 			else {
 				//System.out.println("Thread "+this.ID + " done " + currentBlock.getX()  + " " +currentBlock.getY() );
+
+				// Signal for the next team member to dive and swim the race.
 				nextTeamLatch.countDown();
 				exitPool();//if not last swimmer leave pool
 			}

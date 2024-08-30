@@ -20,6 +20,9 @@ MAIN_CLASS = medleySimulation.MedleySimulation
 # Targets
 .PHONY: all clean run directories
 
+run: all
+	java -classpath bin $(MAIN_CLASS) $(ARGS)
+
 all: directories $(CLASS_FILES)
 
 directories:
@@ -31,5 +34,3 @@ $(BIN_DIR)/%.class: $(SRC_DIR)/%.java
 clean:
 	rm -rf bin/*
 
-run: all
-	java -classpath bin $(MAIN_CLASS) $(ARGS)

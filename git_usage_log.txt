@@ -1,0 +1,17 @@
+commit fbc4edea90122be3c02bb9c91c36817166eeee50
+Author: kelviy <52874397+kelviy@users.noreply.github.com>
+Date:   Fri Aug 30 19:57:06 2024 +0200
+
+    Added comments and modified makefile to default to run method
+
+commit c49bf79a9c118e6e43bdbb43c545d4414931b37d
+Author: kelviy <52874397+kelviy@users.noreply.github.com>
+Date:   Thu Aug 22 22:07:33 2024 +0200
+
+    Fixed concurrency problems in all aspects of the program
+
+commit 138543233960d51822a2695922ff0e6236fabd29
+Author: kelviy <52874397+kelviy@users.noreply.github.com>
+Date:   Wed Aug 21 15:45:44 2024 +0200
+
+    Intial Commit

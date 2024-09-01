@@ -22,7 +22,16 @@ public class CounterDisplay  implements Runnable {
         	//test changes colour when the race is won
         	if (results.isRaceWon()) {
         		win.setForeground(Color.RED);
-               	win.setText("Winning Team: " + results.getWinningTeam() + "!!"); 
+				String first = "1st: (Team " + results.getWinningTeam()[0] + ")";
+				String second = "";
+				String third = "";
+				if (results.getWinningTeam()[1] != -1) {
+					second = "  2nd: (Team " + results.getWinningTeam()[1] + ")";
+				}
+				if (results.getWinningTeam()[2] != -1) {
+					third = "  3rd: (Team " + results.getWinningTeam()[2] + ")";
+				}
+               	win.setText(first + second + third + "!!");
         	}
         	else {
         		win.setForeground(Color.BLACK);

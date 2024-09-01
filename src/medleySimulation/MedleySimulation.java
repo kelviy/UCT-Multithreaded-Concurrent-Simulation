@@ -94,8 +94,7 @@ public class MedleySimulation {
 	
 //Main method - starts it all
 	public static void main(String[] args) throws InterruptedException {
-	
-	
+
 	    finishLine = new FinishCounter(); //counters for people inside and outside club
 	 
 		stadiumGrid = new StadiumGrid(gridX, gridY, numTeams,finishLine); //setup stadium with size     
@@ -109,7 +108,7 @@ public class MedleySimulation {
 		setupGUI(frameX, frameY);  //Start Panel thread - for drawing animation
 		
 		//start viewer thread
-		Thread view = new Thread(stadiumView); 
+		Thread view = new Thread(stadiumView);
 		view.start();
        
       	//Start counter thread - for updating results

@@ -3,12 +3,19 @@ package medleySimulation;
 import javax.swing.*;
 import java.awt.*;
 
+import static java.lang.Thread.sleep;
+
 public class PodiumStand {
 
     private int frameX;
     private int frameY;
 
     private int[] teamWinners;
+
+    private final int FRAMES_PER_SECOND = 30;
+    private final int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
+    private long nextGameTick;
+    private long sleepTime = 0;
 
     public static void main(String[] args) {
         int[] winningTeams = {1, 2, 3};
@@ -29,6 +36,7 @@ public class PodiumStand {
         thread.start();
         frame.setVisible(true);
         this.teamWinners = teamWinners;
+        nextGameTick = System.currentTimeMillis();
     }
 
     protected class PaintPodium extends JPanel implements Runnable{
@@ -71,7 +79,7 @@ public class PodiumStand {
 
         // Lerp function based on rotation angle instead of time
         public int angleLerp(int start, int end) {
-            return (int) Math.round(start + (end - start) * inverseLerp(0, Math.PI/2, this.rotation));
+            return (int) (start + (end - start) * inverseLerp(0, Math.PI/2, this.rotation));
         }
 
         public void branch(Graphics2D g, int x, int y, double length, double rotation, int strokeWidth) {
@@ -83,7 +91,7 @@ public class PodiumStand {
             length *= 0.67;
             strokeWidth *= 0.90;
 
-            if (length > 3) {
+            if (length > 1) {
                 double rotation1 = rotation;
                 rotation = addRotation(rotation, this.rotation);
                 branch(g, b1x, b1y, length, rotation, strokeWidth);
@@ -98,10 +106,6 @@ public class PodiumStand {
         public void drawCircles(Graphics2D g, int x, int y, int r, double rotation) {
             g.drawOval(x-r, y-r, r*2, r*2);
 
-//            if (r > 4) {
-//                r *= 0.75;
-//                drawCircles(g, x, y, r);
-//            }
             if (r > 16) {
                 drawCircles(g, getX(x, r / 2, rotation), y, r / 2, rotation);
                 drawCircles(g, getX(x, - r / 2, rotation), y, r / 2, rotation);
@@ -145,12 +149,20 @@ public class PodiumStand {
             g2d.drawString("2nd: (Team " + teamWinners[1] + ")", x - 45, yString);
 
             x = 420;
-            y = 400;
             branch(g2d, x, y, 50, 0, 4);
             g2d.drawString("3rd: (Team " + teamWinners[2] + ")", x - 45, yString);
 
-            restrictRotation(0.001);
+            restrictRotation(0.05);
 
+            nextGameTick += SKIP_TICKS;
+            sleepTime = nextGameTick - System.currentTimeMillis();
+            if( sleepTime >= 0 ) {
+                try {
+                    sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
 
         public void run() {

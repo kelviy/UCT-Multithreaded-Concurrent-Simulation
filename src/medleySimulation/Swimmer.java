@@ -184,7 +184,7 @@ public class Swimmer extends Thread {
 				}
 				// proceeds if requested
 				enterStadium();
-				toEnterOrder.set(getSwimStroke().getOrder() + 1);
+				toEnterOrder.incrementAndGet();
 				toEnterOrder.notifyAll();
 			}
 

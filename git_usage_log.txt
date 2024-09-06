@@ -1,3 +1,15 @@
+commit 1ca93574124dc2bbcf7d336a69fb83a07183b50c
+Author: kelviy <52874397+kelviy@users.noreply.github.com>
+Date:   Sun Sep 1 19:18:00 2024 +0200
+
+    Added game loop to improve performance
+
+commit 5e1d3ff20e2e5fdf59ddc5fc7bad6bd04ac3d6a8
+Author: kelviy <52874397+kelviy@users.noreply.github.com>
+Date:   Sun Sep 1 14:07:13 2024 +0200
+
+    Added podium and podium visualisation with fractals rendering
+
 commit fbc4edea90122be3c02bb9c91c36817166eeee50
 Author: kelviy <52874397+kelviy@users.noreply.github.com>
 Date:   Fri Aug 30 19:57:06 2024 +0200

@@ -8,6 +8,7 @@ public class FinishCounter {
 	private final int[] winners; //who won
 	private final int[] winningTeams; //counter for patrons who have left the club
 	private int count;
+	private Timer stopwatch;
 	
 	FinishCounter() {
 		firstAcrossLine= true;//no-one has won at start
@@ -18,6 +19,10 @@ public class FinishCounter {
 			winningTeams[i] =-1; //no-one has won at start
 		}
 		count = 0;
+	}
+
+	public void setStopwatch(Timer stopwatch) {
+		this.stopwatch = stopwatch;
 	}
 		
 	//This is called by a swimmer when they touch the finish line
@@ -30,6 +35,7 @@ public class FinishCounter {
 			winningTeams[count]=team;
 		}
 		if (count == 9) {
+			stopwatch.stopRecord();
 			PodiumStand podiumStand = new PodiumStand(600, 500, winningTeams);
 		}
 		count++;
